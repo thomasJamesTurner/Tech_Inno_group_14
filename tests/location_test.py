@@ -1,4 +1,4 @@
-from location import Location
+from flighttracker.location import Location
 
 def test_distance_to():
     point = Location(0,0)

@@ -1,4 +1,4 @@
 # requirements.txt
 pytest
-Queue
-Enum
+queues
+enum

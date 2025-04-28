@@ -5,6 +5,16 @@ import flight
 import location
 from python_opensky import OpenSky, StatesResponse
 from geopy.distance import geodesic
+import requests
+from pathlib import Path
+
+def get_airport_coordinates(ICAO):
+    apiToken = Path("apikeys/airportdb.txt").read_text()
+    response = requests.get(f"https://airportdb.io/api/v1/airport/{ICAO}?apiToken={apiToken}")
+    if response.status_code == 200:
+        data = response.json()
+        return (data['latitude_deg'], data['longitude_deg'])
+    return None
 
 
 async def get_last_day_arrivals():
@@ -38,18 +48,19 @@ async def get_last_day_arrivals():
     return responses
     
 
-async def flights_in_area(radius):
+async def flights_in_area(ICAO,radius):
     api = OpenSky()
     states: StatesResponse = await api.get_states()
 
-    print(f"Checking aircraft en route to Heathrow (within {radius} km)...\n")
+    print(f"Checking aircraft en route to airport (within {radius} km)...\n")
     
     count = 0
     flights = []
+    coords = get_airport_coordinates(ICAO)
     for s in states.states:
         lat = s.latitude
         lon = s.longitude
-        if geodesic((lat, lon), (51.4700, -0.4543)).km <= radius:
+        if geodesic((lat, lon), coords).km <= radius:
 
             current_flight = flight.Flight(callsign = s.callsign or "Unknown\t",speed = s.velocity or "Unknown",altitude = s.barometric_altitude or "Unknown",location = location.Location(lon,lat))
             if s.on_ground:
@@ -70,7 +81,7 @@ async def flights_in_area(radius):
 
 async def main():
    #response = await get_last_day_arrivals()
-   flights = await flights_in_area(20)
+   flights = await flights_in_area("EGLL",20)
    for flight in flights:
         print(flight)
         

@@ -6,4 +6,4 @@ __pycache__/
 venv/
 
 # Ignore API keys folder
-flighttracker/apikeys/
+apikeys/

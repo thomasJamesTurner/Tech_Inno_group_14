@@ -1,1 +1,9 @@
-apikeys/
+# Ignore Python cache
+__pycache__/
+*.pyc
+
+# Ignore virtual environments
+venv/
+
+# Ignore API keys folder
+flighttracker/apikeys/

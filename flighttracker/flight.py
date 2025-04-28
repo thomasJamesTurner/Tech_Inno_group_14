@@ -1,31 +1,35 @@
 from enum import Enum
-from queues import Queue
 import location
 import plane
 
 class Flight_Status(Enum):
-    DELAYED         = 0
-    REFUELING       = 1
-    BOARDING        = 2
-    TAXIING         = 3
-    ON_RUNWAY       = 4
-    TAKING_OFF      = 5
-    IN_FLIGHT       = 6
-    LANDING         = 7
+    GROUNDED        = 0
+    DELAYED         = 1
+    REFUELING       = 2
+    BOARDING        = 3
+    TAXIING         = 4
+    ON_RUNWAY       = 5
+    TAKING_OFF      = 6
+    IN_FLIGHT       = 7
+    LANDING         = 8
 
 class Flight:
     call_sign = ""
-    model = plane()
+    #model = plane()
     airline = ""
     speed =0
     altitude = 0
     eta = 0
     status = Flight_Status(0)
     current_location = location.Location(0,0)
-    route = Queue()
+    def __init__(self,callsign,speed,altitude,location):
+        self.call_sign = callsign
+        self.speed = speed
+        self.altitude = altitude
+        self.current_location = location
 
-    def __init__(self):
-        pass
+    def set_flight_status(self,status):
+        self.status = status
 
     def add_location_to_route(self,place : location.Location):
         self.route.enqueue(place)
@@ -35,4 +39,7 @@ class Flight:
 
     def divert_flight(self,new_route):
         self.route = new_route
+    
+    def __str__(self):
+        return f"{self.call_sign} — Altitude: {self.altitude} m\t Speed: {self.speed} m/s\t Location: ({self.current_location.latitude:.2f}, {self.current_location.longitude:.2f})\tstatus: {self.status}"
 

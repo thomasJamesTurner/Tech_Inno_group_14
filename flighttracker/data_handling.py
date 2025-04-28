@@ -1,6 +1,8 @@
 import asyncio
 import time
 import aiohttp
+import flight
+import location
 from python_opensky import OpenSky, StatesResponse
 from geopy.distance import geodesic
 
@@ -32,6 +34,7 @@ async def get_last_day_arrivals():
             origin  = flight["estDepartureAirport"]
             
             print(f"Callsign: {callsign}, Airline: {airline}, Origin: {origin}")
+    aiohttp.ClientSession.close()
     return responses
     
 
@@ -47,20 +50,30 @@ async def flights_in_area(radius):
         lat = s.latitude
         lon = s.longitude
         if geodesic((lat, lon), (51.4700, -0.4543)).km <= radius:
-            flights.append(s)
+
+            current_flight = flight.Flight(callsign = s.callsign or "Unknown\t",speed = s.velocity or "Unknown",altitude = s.barometric_altitude or "Unknown",location = location.Location(lon,lat))
+            if s.on_ground:
+                current_flight.set_flight_status(flight.Flight_Status.GROUNDED)
+            elif s.vertical_rate < -1 and s.barometric_altitude < 175:
+                current_flight.set_flight_status(flight.Flight_Status.LANDING)
+            elif s.vertical_rate > 1 and s.barometric_altitude < 175:
+                current_flight.set_flight_status(flight.Flight_Status.TAKING_OFF)
+            else:
+                current_flight.set_flight_status(flight.Flight_Status.IN_FLIGHT)
+            flights.append(current_flight)
             
             count += 1
     api.close
+    
+
     return flights
 
 async def main():
    #response = await get_last_day_arrivals()
-   flights = await flights_in_area(10)
+   flights = await flights_in_area(20)
    for flight in flights:
-        callsign = flight.callsign.strip() if flight.callsign else "N/A"
-        altitude = flight.barometric_altitude or 0
-        speed = flight.velocity or 0
-        print(f"{callsign} — Altitude: {int(altitude)} m, Speed: {int(speed)} m/s, Location: ({flight.lat:.2f}, {flight.lon:.2f})")
+        print(flight)
+        
 
 
 

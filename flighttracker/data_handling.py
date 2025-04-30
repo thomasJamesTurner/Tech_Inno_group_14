@@ -1,8 +1,8 @@
 import asyncio
 import time
 import aiohttp
-import flight
-import location
+import flighttracker.flight as flight
+import flighttracker.location as location
 from python_opensky import OpenSky, StatesResponse
 from geopy.distance import geodesic
 import requests

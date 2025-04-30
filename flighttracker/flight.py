@@ -1,7 +1,7 @@
 from enum import Enum
 from collections import deque
 from geopy.distance import geodesic
-import location
+import flighttracker.location as location
 
 
 class Flight_Status(Enum):

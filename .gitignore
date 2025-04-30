@@ -5,5 +5,5 @@ __pycache__/
 # Ignore virtual environments
 venv/
 
-# Ignore API keys folder
-apikeys/
+# Ignore API keys
+apikeys.env

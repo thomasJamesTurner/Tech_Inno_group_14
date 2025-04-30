@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Airport Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header>
+        <div class="nav">
+            <div class="logo">LOGO</div>
+            <a href="#">Dashboard</a>
+            <a href="#">Flights</a>
+            <a href="#">Weather</a>
+            <div class="search">Search: ........</div>
+        </div>
+    </header>
+
+    <aside class="sidebar">
+        <div class="icon">🏠</div>
+        <div class="icon">🗂</div>
+    </aside>
+
+    <main class="main-grid">
+        <section class="info-box">
+            <p>This airport</p>
+
+        </section>
+
+        <section class="clock-box">Time:<br>{{ data.time }}</section>
+
+        <section class="weather-box">
+
+        </section>
+
+        <section class="flight-table">
+            <table>
+                <thead>
+                    <tr><th colspan="5">Inbound</th></tr>
+                    <tr>
+                        <th>Flight</th><th>Airline</th><th>Origin</th><th>ETD</th><th>Destination</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for flight in data.inbound %}
+                    <tr>
+                        <td>{{ flight.flight }}</td>
+                        <td>{{ flight.airline }}</td>
+                        <td>{{ flight.origin }}</td>
+                        <td>{{ flight.etd }}</td>
+                        <td>{{ flight.destination }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <table>
+                <thead>
+                    <tr><th colspan="3">Outbound</th></tr>
+                    <tr>
+                        <th>Route</th><th>Status</th><th>ETA</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for flight in data.outbound %}
+                    <tr>
+                        <td>{{ flight.route }}</td>
+                        <td>{{ flight.status }}</td>
+                        <td>{{ flight.eta }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </section>
+    </main>
+    
+    <script>
+        async function fetchFlightData() {
+            const response = await fetch("/flights-data");
+            const data = await response.json();
+        
+            let inboundHTML = "<h3>Inbound Flights</h3><ul>";
+            data.inbound.forEach(f => {
+                inboundHTML += `<li>${f.callsign} | ${f.altitude}m | ${f.status}</li>`;
+            });
+            inboundHTML += "</ul>";
+        
+            let outboundHTML = "<h3>Outbound Flights</h3><ul>";
+            data.outbound.forEach(f => {
+                outboundHTML += `<li>${f.callsign} | ${f.altitude}m | ${f.status}</li>`;
+            });
+            outboundHTML += "</ul>";
+        
+            document.getElementById("flight-inbound").innerHTML = inboundHTML;
+            document.getElementById("flight-outbound").innerHTML = outboundHTML;
+        }
+        
+        setInterval(fetchFlightData, 30000);  // 30s
+        fetchFlightData();  // Initial load
+        </script>        
+</body>
+</html>

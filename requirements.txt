@@ -3,3 +3,4 @@ pytest
 queues
 geopy
 python_opensky
+asyncio

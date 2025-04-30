@@ -7,9 +7,58 @@ from python_opensky import OpenSky, StatesResponse
 from geopy.distance import geodesic
 import requests
 from pathlib import Path
+from datetime import datetime
+import sqlite3
+import dotenv
+
+def init_db(db_path="flights.db"):
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS flights_table (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            timestamp TEXT,
+            callsign TEXT,
+            speed REAL,
+            altitude REAL,
+            latitude REAL,
+            longitude REAL,
+            status TEXT
+        )
+    ''')
+    conn.commit()
+    conn.close()
+
+
+def save_flight_to_db(flight_obj, db_path="flights.db"):
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    cursor.execute('''
+        INSERT INTO flights_table (timestamp, callsign, speed, altitude, latitude, longitude, status)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    ''', (
+        datetime.now(),
+        flight_obj.call_sign,
+        flight_obj.speed,
+        flight_obj.altitude,
+        flight_obj.current_location.latitude,
+        flight_obj.current_location.longitude,
+        str(flight_obj.status)
+    ))
+    conn.commit()
+    conn.close()
+
+def load_flights_from_db(limit=10):
+    conn = sqlite3.connect("flights.db")
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM flights_table ORDER BY timestamp DESC LIMIT ?', (limit,))
+    rows = cursor.fetchall()
+    conn.close()
+    return rows
+
 
 def get_airport_coordinates(ICAO):
-    apiToken = Path("apikeys/airportdb.txt").read_text()
+    apiToken = dotenv.get_key("apikeys.env", "AIRPORT_KEY")
     response = requests.get(f"https://airportdb.io/api/v1/airport/{ICAO}?apiToken={apiToken}")
     if response.status_code == 200:
         data = response.json()
@@ -44,7 +93,6 @@ async def get_last_day_arrivals():
             origin  = flight["estDepartureAirport"]
             
             print(f"Callsign: {callsign}, Airline: {airline}, Origin: {origin}")
-    aiohttp.ClientSession.close()
     return responses
     
 
@@ -57,12 +105,13 @@ async def flights_in_area(ICAO,radius):
     count = 0
     flights = []
     coords = get_airport_coordinates(ICAO)
+    print(coords)
     for s in states.states:
         lat = s.latitude
         lon = s.longitude
         if geodesic((lat, lon), coords).km <= radius:
 
-            current_flight = flight.Flight(callsign = s.callsign or "Unknown\t",speed = s.velocity or "Unknown",altitude = s.barometric_altitude or "Unknown",location = location.Location(lon,lat))
+            current_flight = flight.Flight(callsign = s.callsign or "Unknown\t",speed = s.velocity or "Unknown",altitude = s.barometric_altitude or "Unknown",location = location.Location(lon,lat), airport_coords=coords)
             if s.on_ground:
                 current_flight.set_flight_status(flight.Flight_Status.GROUNDED)
             elif s.vertical_rate < -1 and s.barometric_altitude < 175:
@@ -74,16 +123,18 @@ async def flights_in_area(ICAO,radius):
             flights.append(current_flight)
             
             count += 1
-    api.close
+    await api.close()
     
 
     return flights
 
 async def main():
-   #response = await get_last_day_arrivals()
-   flights = await flights_in_area("EGLL",20)
-   for flight in flights:
-        print(flight)
+    init_db()  # Create the database and table
+    flights = await flights_in_area("EGLL", 20)
+    for f in flights:
+        save_flight_to_db(f)
+        print(f)
+
         
 
 

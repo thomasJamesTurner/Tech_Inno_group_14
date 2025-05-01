@@ -1,5 +1,7 @@
 # requirements.txt
-pytest
-queues
+aiohttp
+python-opensky
 geopy
-python_opensky
+requests
+python-dotenv
+folium

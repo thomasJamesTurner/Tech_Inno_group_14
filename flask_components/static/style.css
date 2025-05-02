@@ -65,6 +65,40 @@ body {
     margin-top: 20px;
 }
 
+.flight-map-container {
+    grid-column: 1 / span 3;
+    margin-top: 20px;
+    border: 2px solid white;
+    border-radius: 20px;
+    padding: 20px;
+}
+
+#flight-map {
+    height: 400px;
+    width: 100%;
+}
+
+.flight-updates {
+    grid-column: 1 / span 3;
+    display: flex;
+    justify-content: space-between;
+    margin-top: 20px;
+}
+
+.flight-lists {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+}
+
+#flight-inbound, #flight-outbound {
+    flex: 1;
+    padding: 15px;
+    background-color: #222;
+    border-radius: 10px;
+    margin: 0 10px;
+}
+
 table {
     width: 100%;
     margin-top: 10px;

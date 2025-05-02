@@ -111,15 +111,18 @@ async def flights_in_area(ICAO,radius):
         lon = s.longitude
         if geodesic((lat, lon), coords).km <= radius:
 
-            current_flight = flight.Flight(callsign = s.callsign or "Unknown\t",speed = s.velocity or "Unknown",altitude = s.barometric_altitude or "Unknown",location = location.Location(lon,lat), airport_coords=coords)
-            if s.on_ground:
-                current_flight.set_flight_status(flight.Flight_Status.GROUNDED)
-            elif s.vertical_rate < -1 and s.barometric_altitude < 175:
-                current_flight.set_flight_status(flight.Flight_Status.LANDING)
-            elif s.vertical_rate > 1 and s.barometric_altitude < 175:
-                current_flight.set_flight_status(flight.Flight_Status.TAKING_OFF)
+            current_flight = flight.Flight(callsign = s.callsign or "Unknown",speed = s.velocity or "Unknown",altitude = s.barometric_altitude or "Unknown",location = location.Location(lon,lat), airport_coords=coords)
+            if s.barometric_altitude != None and s.vertical_rate != None:
+                if s.on_ground:
+                    current_flight.set_flight_status(flight.Flight_Status.GROUNDED)
+                elif s.vertical_rate < -1 and s.barometric_altitude < 175:
+                    current_flight.set_flight_status(flight.Flight_Status.LANDING)
+                elif s.vertical_rate > 1 and s.barometric_altitude < 175:
+                    current_flight.set_flight_status(flight.Flight_Status.TAKING_OFF)
+                else:
+                    current_flight.set_flight_status(flight.Flight_Status.IN_FLIGHT)
             else:
-                current_flight.set_flight_status(flight.Flight_Status.IN_FLIGHT)
+                    current_flight.set_flight_status(flight.Flight_Status.IN_FLIGHT)
             flights.append(current_flight)
             
             count += 1

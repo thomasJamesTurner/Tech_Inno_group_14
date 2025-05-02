@@ -3,6 +3,15 @@
 <head>
     <title>Airport Dashboard</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    
+    <!-- Map dependencies -->
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.css"/>
+    <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap-glyphicons.css"/>
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 </head>
 <body>
     <header>
@@ -23,13 +32,21 @@
     <main class="main-grid">
         <section class="info-box">
             <p>This airport</p>
-
         </section>
 
-        <section class="clock-box">Time:<br>{{ data.time }}</section>
+        <section class="clock-box">
+            <div id="current-time">Loading...</div>
+        </section>
 
         <section class="weather-box">
+            <!-- Weather content -->
+        </section>
 
+        
+        <!-- Flight map section -->
+        <section class="flight-map-container">
+            <h2>Live Flight Tracker</h2>
+            <div id="flight-map"></div>
         </section>
 
         <section class="flight-table">
@@ -73,29 +90,6 @@
         </section>
     </main>
     
-    <script>
-        async function fetchFlightData() {
-            const response = await fetch("/flights-data");
-            const data = await response.json();
-        
-            let inboundHTML = "<h3>Inbound Flights</h3><ul>";
-            data.inbound.forEach(f => {
-                inboundHTML += `<li>${f.callsign} | ${f.altitude}m | ${f.status}</li>`;
-            });
-            inboundHTML += "</ul>";
-        
-            let outboundHTML = "<h3>Outbound Flights</h3><ul>";
-            data.outbound.forEach(f => {
-                outboundHTML += `<li>${f.callsign} | ${f.altitude}m | ${f.status}</li>`;
-            });
-            outboundHTML += "</ul>";
-        
-            document.getElementById("flight-inbound").innerHTML = inboundHTML;
-            document.getElementById("flight-outbound").innerHTML = outboundHTML;
-        }
-        
-        setInterval(fetchFlightData, 30000);  // 30s
-        fetchFlightData();  // Initial load
-        </script>        
+    <script src="{{ url_for('static', filename='js/flight_map.js') }}"></script>
 </body>
 </html>

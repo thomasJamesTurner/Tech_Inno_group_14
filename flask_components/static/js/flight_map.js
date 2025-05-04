@@ -34,7 +34,7 @@ async function fetchFlightData() {
         
         // Add marker to map
         if (f.latitude && f.longitude) {
-            const markerColor = f.status.includes("LANDING") ? "orange" : "green";
+            const markerColor = f.status.includes("LANDING") ? "yellow" : "green";
             const marker = L.marker([f.latitude, f.longitude])
                 .addTo(map)
                 .bindPopup(`<b>${f.callsign}</b><br>Altitude: ${f.altitude} m<br>Speed: ${f.speed} m/s<br>Status: ${f.status}`);
@@ -58,14 +58,14 @@ async function fetchFlightData() {
         
         // Add marker to map
         if (f.latitude && f.longitude) {
-            const markerColor = f.status.includes("TAKING_OFF") ? "blue" : "white";
+            const markerColor = f.status.includes("TAKING_OFF") ? "purple" : "blue";
             const marker = L.marker([f.latitude, f.longitude])
                 .addTo(map)
                 .bindPopup(`<b>${f.callsign}</b><br>Altitude: ${f.altitude} m<br>Speed: ${f.speed} m/s<br>Status: ${f.status}`);
             
             marker.setIcon(L.AwesomeMarkers.icon({
-                markerColor: 'blue',
-                iconColor: 'white',
+                markerColor: markerColor,
+                iconColor: markerColor,
                 icon: 'info-sign',
                 prefix: 'glyphicon'
             }));

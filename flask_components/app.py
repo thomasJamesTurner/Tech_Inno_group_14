@@ -14,19 +14,6 @@ def dashboard():
     inbound = []
     outbound = []
     for f in raw_flights:
-        flight_info = {
-            "callsign": f.call_sign,
-            "speed": f.speed,
-            "altitude": f.altitude,
-            "latitude": f.current_location.latitude,
-            "longitude": f.current_location.longitude,
-            "status": str(f.status),
-            "eta": f.eta or "Unknown",
-            "airline": f.airline,
-            "destination": "EGLL",  # mock
-            "origin": "Unknown"     # could be fetched if available
-        }
-    for f in raw_flights:
         flight_data = {
             "flight": f.call_sign,  # callsign
             "airline": f.airline,  # first 3 letters

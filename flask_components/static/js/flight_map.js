@@ -1,4 +1,11 @@
 
+//clock
+function updateTime() {
+    const now = new Date();
+    document.getElementById("current-time").innerHTML = now.toLocaleTimeString();
+}
+setInterval(updateTime, 1000);
+updateTime();
 
 // Initialize map
 const map = L.map('flight-map').setView([51.47, -0.45], 10);
@@ -34,7 +41,7 @@ async function fetchFlightData() {
             
             marker.setIcon(L.AwesomeMarkers.icon({
                 markerColor: markerColor,
-                iconColor: 'white',
+                iconColor: markerColor,
                 icon: 'info-sign',
                 prefix: 'glyphicon'
             }));
@@ -51,6 +58,7 @@ async function fetchFlightData() {
         
         // Add marker to map
         if (f.latitude && f.longitude) {
+            const markerColor = f.status.includes("TAKING_OFF") ? "blue" : "white";
             const marker = L.marker([f.latitude, f.longitude])
                 .addTo(map)
                 .bindPopup(`<b>${f.callsign}</b><br>Altitude: ${f.altitude} m<br>Speed: ${f.speed} m/s<br>Status: ${f.status}`);

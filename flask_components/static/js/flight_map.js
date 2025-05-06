@@ -79,13 +79,13 @@ async function fetchFlightData() {
     document.getElementById("flight-outbound").innerHTML = outboundHTML;
 }
 
-// Update every 30 seconds
+//update every 30s
 setInterval(fetchFlightData, 30000);
 
-// Initial load
+//inital load
 fetchFlightData();
 
-// Resize map when window is resized
+
 window.addEventListener('resize', function() {
     map.invalidateSize();
 });

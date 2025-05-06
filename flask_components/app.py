@@ -3,8 +3,9 @@ import sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 from flask import Flask, jsonify, render_template
-from flighttracker.data_handling import flights_in_area, load_flights_from_db
+from flighttracker.data_handling import flights_in_area, load_flights_from_db ,get_airport_weather
 from flighttracker.map_link import make_map
+import flighttracker.weather as Weather
 
 app = Flask(__name__)
 
@@ -62,7 +63,22 @@ def flights_data():
 
     return jsonify({"inbound": inbound_data, "outbound": outbound_data})
 
+@app.route("/weather-data")
+def weather_data():
+    print("getting weather")
+    try:
+        # Try to get actual weather data using your existing function
+        weather_info = asyncio.run(get_airport_weather("EGLL"))
+        
+        # If successful, return the data
+        if weather_info:
+            current_weather = weather_info[0]
+            #print(Weather.weather.weather_code_to_text(current_weather["weathercode"]))
+            return jsonify(Weather.weather.weather_code_to_text(current_weather["weathercode"]),weather_info)
+    except Exception as e:
+        print(f"Error fetching weather data: {e}")
 
+    return None
 
 if __name__ == '__main__':
     make_map()

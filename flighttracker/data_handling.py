@@ -7,7 +7,8 @@ from python_opensky import OpenSky, StatesResponse
 from geopy.distance import geodesic
 import requests
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timedelta
+import pytz
 import sqlite3
 import dotenv
 
@@ -65,6 +66,38 @@ def get_airport_coordinates(ICAO):
         return (data['latitude_deg'], data['longitude_deg'])
     return None
 
+async def get_airport_weather(ICAO):
+    #using coordinates to get weather site number
+    coords = get_airport_coordinates(ICAO)
+    url = "https://api.open-meteo.com/v1/forecast"
+    now = datetime.now(pytz.timezone("GMT"))
+    end_time = now + timedelta(hours=24)
+
+    url = "https://api.open-meteo.com/v1/forecast"
+    params = {
+        "latitude": coords[0],
+        "longitude": coords[1],
+        "hourly": "temperature_2m,weathercode",
+        "timezone": "GMT",
+        "start_date": now.strftime("%Y-%m-%d"),
+        "end_date": end_time.strftime("%Y-%m-%d")
+    }
+    response = requests.get(url, params=params)
+    data = response.json()
+
+    times = data["hourly"]["time"]
+    temperatures = data["hourly"]["temperature_2m"]
+    weathercodes = data["hourly"]["weathercode"]
+
+    forecast = []
+    for i in range(24):
+        forecast.append({
+            "time": times[i],
+            "temperature": temperatures[i],
+            "weathercode": weathercodes[i]
+        })
+
+    return forecast
 
 async def get_last_day_arrivals():
     airport = "EGLL"
@@ -132,11 +165,12 @@ async def flights_in_area(ICAO,radius):
     return flights
 
 async def main():
-    init_db()  # Create the database and table
-    flights = await flights_in_area("EGLL", 20)
-    for f in flights:
-        save_flight_to_db(f)
-        print(f)
+    print(get_airport_weather("EGLL"))
+    #init_db()  # Create the database and table
+    #flights = await flights_in_area("EGLL", 20)
+    #for f in flights:
+    #    save_flight_to_db(f)
+    #    print(f)
 
         
 

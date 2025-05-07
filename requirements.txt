@@ -5,3 +5,7 @@ geopy
 requests
 python-dotenv
 folium
+openmeteo_requests
+requests_cache
+retry_requests
+pandas

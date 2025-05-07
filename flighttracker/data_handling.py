@@ -5,8 +5,10 @@ import flighttracker.flight as flight
 import flighttracker.location as location
 from python_opensky import OpenSky, StatesResponse
 from geopy.distance import geodesic
-import requests
-from pathlib import Path
+import openmeteo_requests
+import requests_cache
+from retry_requests import retry
+import pandas as pd
 from datetime import datetime, timedelta
 import pytz
 import sqlite3
@@ -54,26 +56,33 @@ def load_flights_from_db(limit=10):
     cursor = conn.cursor()
     cursor.execute('SELECT * FROM flights_table ORDER BY timestamp DESC LIMIT ?', (limit,))
     rows = cursor.fetchall()
+
     conn.close()
     return rows
 
 
-def get_airport_coordinates(ICAO):
+async def get_airport_coordinates(ICAO):
     apiToken = dotenv.get_key("apikeys.env", "AIRPORT_KEY")
-    response = requests.get(f"https://airportdb.io/api/v1/airport/{ICAO}?apiToken={apiToken}")
-    if response.status_code == 200:
-        data = response.json()
-        return (data['latitude_deg'], data['longitude_deg'])
+    async with aiohttp.ClientSession() as session:
+        async with session.get(f"https://airportdb.io/api/v1/airport/{ICAO}?apiToken={apiToken}") as response:
+            if response.status == 200:
+                data = await response.json()
+                return (data['latitude_deg'], data['longitude_deg'])
     return None
 
 async def get_airport_weather(ICAO):
-    #using coordinates to get weather site number
-    coords = get_airport_coordinates(ICAO)
+    # Using coordinates to get weather site number
+    coords = await get_airport_coordinates(ICAO)
+    if not coords:
+        return None
+    
+    cache_session = requests_cache.CachedSession('.cache', expire_after = 3600)
+    retry_session = retry(cache_session, retries = 5, backoff_factor = 0.2)
+    openmeteo = openmeteo_requests.Client(session = retry_session)
     url = "https://api.open-meteo.com/v1/forecast"
     now = datetime.now(pytz.timezone("GMT"))
-    end_time = now + timedelta(hours=24)
+    end_time = now + timedelta(hours=36)
 
-    url = "https://api.open-meteo.com/v1/forecast"
     params = {
         "latitude": coords[0],
         "longitude": coords[1],
@@ -82,22 +91,33 @@ async def get_airport_weather(ICAO):
         "start_date": now.strftime("%Y-%m-%d"),
         "end_date": end_time.strftime("%Y-%m-%d")
     }
-    response = requests.get(url, params=params)
-    data = response.json()
+    
+    responses = openmeteo.weather_api(url, params=params)
+    data = responses[0]
+    hourly = data.Hourly()
+    
+    # Convert the time data to ISO format strings
+    time_array = pd.date_range(
+        start = pd.to_datetime(hourly.Time(), unit = "s", utc = True),
+        end = pd.to_datetime(hourly.TimeEnd(), unit = "s", utc = True),
+        freq = pd.Timedelta(seconds = hourly.Interval()),
+        inclusive = "left"
+    )
+    
+    hourly_temperature_2m = hourly.Variables(0).ValuesAsNumpy().tolist()
+    hourly_weathercode = hourly.Variables(1).ValuesAsNumpy().tolist()
+    
 
-    times = data["hourly"]["time"]
-    temperatures = data["hourly"]["temperature_2m"]
-    weathercodes = data["hourly"]["weathercode"]
-
-    forecast = []
-    for i in range(24):
-        forecast.append({
-            "time": times[i],
-            "temperature": temperatures[i],
-            "weathercode": weathercodes[i]
-        })
-
-    return forecast
+    weather_data = []
+    for i in range(len(time_array)):
+        if now <= time_array[i].to_pydatetime() <= end_time:
+            weather_data.append({
+                "time": time_array[i].isoformat(),
+                "temperature": float(hourly_temperature_2m[i]),  
+                "weathercode": int(hourly_weathercode[i])        
+            })
+    
+    return weather_data
 
 async def get_last_day_arrivals():
     airport = "EGLL"

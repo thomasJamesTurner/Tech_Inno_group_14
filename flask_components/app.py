@@ -64,21 +64,29 @@ def flights_data():
     return jsonify({"inbound": inbound_data, "outbound": outbound_data})
 
 @app.route("/weather-data")
+@app.route("/weather-data")
 def weather_data():
     print("getting weather")
     try:
-        # Try to get actual weather data using your existing function
         weather_info = asyncio.run(get_airport_weather("EGLL"))
-        
-        # If successful, return the data
         if weather_info:
-            current_weather = weather_info[0]
-            #print(Weather.weather.weather_code_to_text(current_weather["weathercode"]))
-            return jsonify(Weather.weather.weather_code_to_text(current_weather["weathercode"]),weather_info)
+            processed_info = []
+            for hour in weather_info:
+                processed_info.append({
+                    "time": hour["time"],
+                    "temperature": hour["temperature"],
+                    "weathercode": hour["weathercode"],
+                    "weather_description": Weather.weather.weather_code_to_text(hour["weathercode"]),
+                    "weather_image": Weather.weather.weather_code_to_image(hour["weathercode"])
+                })
+
+            return jsonify({
+                "current_weather": processed_info[0],
+                "forecast": processed_info[1:] if len(processed_info) > 1 else []
+            })
     except Exception as e:
         print(f"Error fetching weather data: {e}")
-
-    return None
+    return jsonify({"error": "Unable to fetch weather data"})
 
 if __name__ == '__main__':
     make_map()

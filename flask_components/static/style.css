@@ -67,7 +67,11 @@ body {
     grid-column: 1 / span 3;
     margin-top: 20px;
 }
-
+.daily-weather{
+    font-size: 20px;
+    grid-column: 1 / span 3;
+    margin-top: 20px;
+}
 .flight-map-container {
     grid-column: 1 / span 3;
     margin-top: 20px;
@@ -75,6 +79,12 @@ body {
     padding: 20px;
 }
 
+#weather-forecast{
+    flex: 1;
+    padding: 15px;
+    background-color: #222;
+    margin: 0 10px;
+}
 #flight-map {
     height: 400px;
     width: 100%;

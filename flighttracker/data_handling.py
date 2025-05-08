@@ -66,14 +66,39 @@ def get_airport_coordinates(ICAO):
         return (data['latitude_deg'], data['longitude_deg'])
     return None
 
+
+
+def extract_next_8_hours(data):
+    now_dt = datetime.now(pytz.timezone("GMT")).replace(minute=0, second=0, microsecond=0)
+    now = now_dt.strftime("%Y-%m-%dT%H:%M")
+    
+    times = data["hourly"]["time"]
+    temperatures = data["hourly"]["temperature_2m"]
+    weathercodes = data["hourly"]["weathercode"]
+
+    start_index = -1
+    for i in range(len(times)):
+        if times[i] == now:
+            start_index = i
+
+    forecast = []
+    for i in range(start_index, start_index + 8):
+        forecast.append({
+            "time": times[i],
+            "temperature": temperatures[i],
+            "weathercode": weathercodes[i]
+        })
+    return forecast
+
 async def get_airport_weather(ICAO):
-    #using coordinates to get weather site number
     coords = get_airport_coordinates(ICAO)
+    if not coords:
+        return None
+        
     url = "https://api.open-meteo.com/v1/forecast"
     now = datetime.now(pytz.timezone("GMT"))
-    end_time = now + timedelta(hours=24)
+    end_time = now + timedelta(hours=48)
 
-    url = "https://api.open-meteo.com/v1/forecast"
     params = {
         "latitude": coords[0],
         "longitude": coords[1],
@@ -82,22 +107,17 @@ async def get_airport_weather(ICAO):
         "start_date": now.strftime("%Y-%m-%d"),
         "end_date": end_time.strftime("%Y-%m-%d")
     }
-    response = requests.get(url, params=params)
-    data = response.json()
+    
+    try:
+        response = requests.get(url, params=params)
+        response.raise_for_status()
+        data = response.json()
+        return extract_next_8_hours(data)
+    except Exception as e:
+        print(f"Error fetching weather data: {e}")
+        return None
 
-    times = data["hourly"]["time"]
-    temperatures = data["hourly"]["temperature_2m"]
-    weathercodes = data["hourly"]["weathercode"]
 
-    forecast = []
-    for i in range(24):
-        forecast.append({
-            "time": times[i],
-            "temperature": temperatures[i],
-            "weathercode": weathercodes[i]
-        })
-
-    return forecast
 
 async def get_last_day_arrivals():
     airport = "EGLL"

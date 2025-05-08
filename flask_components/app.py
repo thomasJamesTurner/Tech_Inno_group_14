@@ -1,4 +1,4 @@
-from asgiref.wsgi import WsgiToAsgi
+import asyncio
 import sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parents[1]))
@@ -8,79 +8,78 @@ from flighttracker.map_link import make_map
 import flighttracker.weather as Weather
 
 app = Flask(__name__)
-asgi_app = WsgiToAsgi(app)
-
-def parse_flights(data):
-    inbound = []
-    outbound = []
-    if isinstance(data[0],tuple):
-        for f in data:
-            flight_data = {
-                "flight": f[2],  # callsign
-                "airline": f[2][:3],  # first 3 letters
-                "origin": "Unknown",  # origin not stored in db
-                "etd": "Unknown",
-                "destination": "Canada",
-                "route": "NBA",
-                "status": f[7],  # status
-                "eta": "On time" if "On time" in f[2] else "Delayed"  # mock logic
-        }
-            if data.index(f) % 2 == 0:
-                inbound.append(flight_data)
-            else:
-                outbound.append(flight_data)
-    else:
-        for f in data:
-            flight_data = {
-                "flight": f.callsign,  # callsign
-                "airline": f.airline,  # first 3 letters
-                "origin": "Unknown",  # origin not stored in db
-                "etd": "Unknown",
-                "destination": "Canada",
-                "route": "NBA",
-                "status": f.status,  # status
-                "eta": f.eta if f.eta != None else "Delayed"  # mock logic
-            }
-            if data.index(f) % 2 == 0:
-                inbound.append(flight_data)
-            else:
-                outbound.append(flight_data)
-    return (inbound,outbound)
-
 
 @app.route('/')
 def dashboard():
-    raw_flights = flights_in_area("EGLL", 20)  # Live query
-    #raw_flights = load_flights_from_db()
-    flights = parse_flights(raw_flights)
+    raw_flights = asyncio.run(flights_in_area("EGLL", 20))  # Live query
+    inbound = []
+    outbound = []
+    for f in raw_flights:
+        flight_data = {
+            "flight": f.call_sign,  # callsign
+            "airline": f.airline,  # first 3 letters
+            "origin": "Unknown",  # origin not stored in db
+            "etd": "Unknown",
+            "destination": "Canada",
+            "route": "NBA",
+            "status": f.status,  # status
+            "eta": f.eta if f.eta != None else "Delayed"  # mock logic
+        }
 
-    return render_template("dashboard.html", data={"inbound": flights[0], "outbound": flights[1]})
+        # Fake grouping logic: alternate between inbound/outbound
+        if raw_flights.index(f) % 2 == 0:
+            inbound.append(flight_data)
+        else:
+            outbound.append(flight_data)
+
+    return render_template("dashboard.html", data={"inbound": inbound, "outbound": outbound})
 
 @app.route("/flights-data")
 def flights_data():
-    raw_flights = flights_in_area("EGLL", 20)  # Live query
-    raw_flights = load_flights_from_db()
-    flights = parse_flights(raw_flights)
-    
-    
+    flights = asyncio.run(flights_in_area("EGLL", 20))  # Live query
 
-    return jsonify({"inbound": flights[0], "outbound": flights[1]})
+    inbound_data = []
+    outbound_data = []
+
+    for f in flights:
+        flight_info = {
+            "callsign": f.call_sign,
+            "speed": f.speed,
+            "altitude": f.altitude,
+            "latitude": f.current_location.latitude,
+            "longitude": f.current_location.longitude,
+            "status": str(f.status),
+            "eta": f.eta or "Unknown",
+            "airline": f.airline,
+            "destination": "EGLL",  # mock
+            "origin": "Unknown"     # could be fetched if available
+        }
+
+        # Simulated logic: if altitude is low and descending → inbound
+        if str(f.status) in ["Flight_Status.LANDING", "Flight_Status.GROUNDED"]:
+            inbound_data.append(flight_info)
+        else:
+            outbound_data.append(flight_info)
+
+    return jsonify({"inbound": inbound_data, "outbound": outbound_data})
 
 @app.route("/weather-data")
-async def weather_data():
+def weather_data():
     print("getting weather")
     try:
-        weather_info = await get_airport_weather("EGLL")
+        # Try to get actual weather data using your existing function
+        weather_info = asyncio.run(get_airport_weather("EGLL"))
+        
+        # If successful, return the data
         if weather_info:
-            for hour in weather_info:
-                hour["weathercode"] = Weather.weather.weather_code_to_text(hour["weathercode"])
-            return jsonify(weather_info)
-        else:
-            return jsonify([]), 404
+            current_weather = weather_info[0]
+            #print(Weather.weather.weather_code_to_text(current_weather["weathercode"]))
+            return jsonify(Weather.weather.weather_code_to_text(current_weather["weathercode"]),weather_info)
     except Exception as e:
         print(f"Error fetching weather data: {e}")
-        return jsonify({"error": str(e)}), 500
+
+    return None
+
 if __name__ == '__main__':
-    print(get_airport_weather("EGLL"))
     make_map()
     app.run(debug=True)

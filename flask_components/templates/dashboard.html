@@ -39,7 +39,7 @@
         </section>
 
         <section class="weather-box">
-            <div id="weather-icons">Loading ...</div>
+            <div id="weather-icons"></div>
         </section>
 
         
@@ -71,14 +71,12 @@
             </table>
 
             <table>
-                <th>
-                    <tr>
-                        <th colspan="3">Outbound</th>
-                    </tr>
+                <thead>
+                    <tr><th colspan="3">Outbound</th></tr>
                     <tr>
                         <th>Route</th><th>Status</th><th>ETA</th>
                     </tr>
-                </th>
+                </thead>
                 <tbody>
                     {% for flight in data.outbound %}
                     <tr>
@@ -89,9 +87,6 @@
                     {% endfor %}
                 </tbody>
             </table>
-        </section>
-        <section class = "daily-weather">
-            <div id = "weather-forecast"></div>
         </section>
     </main>
     <script src="{{ url_for('static', filename='js/flight_map.js') }}"></script>

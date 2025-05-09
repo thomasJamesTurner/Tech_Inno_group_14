@@ -2,3 +2,6 @@ To run the code you must
 download the requirements in the requirements.txt:
 
 pip install (the missing imports)
+
+if all imports are working
+run app.py
